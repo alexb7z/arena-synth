@@ -29,11 +29,15 @@ export class SocketAdapter implements MultiplayerAdapter {
       this.socket = s;
 
       s.on("connect", () => {
-        console.log("Socket conectado:", s.id);
-        resolve();
-      });
+  console.log("Socket conectado:", s.id);
 
-      s.on("connect_error", (err) => {
+  // 🔥 ESSA LINHA RESOLVE SEU PROBLEMA
+  sessionStorage.setItem("tetris.me", s.id);
+
+  resolve();
+});
+
+	s.on("connect_error", (err) => {
         console.error("Erro Socket.IO:", err.message);
         this.errorListeners.forEach((l) => l(err.message));
         reject(err);
