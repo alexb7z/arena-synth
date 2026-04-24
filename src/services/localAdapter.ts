@@ -113,7 +113,7 @@ export class LocalAdapter implements MultiplayerAdapter {
         break;
       }
       case "pause":
-        me.status = me.status === "paused" ? "playing" : "paused";
+        me.status = (me.status as string) === "paused" ? "playing" : "paused";
         break;
     }
     this.emit();
