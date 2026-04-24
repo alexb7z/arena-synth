@@ -13,8 +13,7 @@ import type {
   StateListener,
 } from "./multiplayerAdapter";
 
-const SOCKET_URL =
-  (import.meta.env.VITE_SOCKET_URL as string | undefined) ?? "http://localhost:3001";
+const socket = io("http://3.87.157.51:3001");
 
 export class SocketAdapter implements MultiplayerAdapter {
   private socket: Socket | null = null;
@@ -24,7 +23,7 @@ export class SocketAdapter implements MultiplayerAdapter {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       const s = io(SOCKET_URL, {
-        transports: ["websocket"],
+        transports: ["polling", "websocket"],
         reconnection: true,
         timeout: 4000,
       });
