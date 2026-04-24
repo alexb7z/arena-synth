@@ -1,9 +1,5 @@
 /**
  * Socket.IO adapter — talks to the Node.js server in /tetris-server.
- *
- * Configure the URL via VITE_SOCKET_URL (defaults to http://localhost:3001).
- * If the server isn't running, the app automatically falls back to the
- * LocalAdapter (see useMultiplayer hook).
  */
 import { io, type Socket } from "socket.io-client";
 import type { ClientInput, RoomState } from "@/types/tetris";
@@ -13,7 +9,9 @@ import type {
   StateListener,
 } from "./multiplayerAdapter";
 
-const socket = io("http://3.87.157.51:3001");
+const SOCKET_URL =
+  (import.meta.env.VITE_SOCKET_URL as string | undefined) ??
+  "http://3.87.157.51:3001";
 
 export class SocketAdapter implements MultiplayerAdapter {
   private socket: Socket | null = null;
@@ -25,18 +23,26 @@ export class SocketAdapter implements MultiplayerAdapter {
       const s = io(SOCKET_URL, {
         transports: ["polling", "websocket"],
         reconnection: true,
-        timeout: 4000,
+        timeout: 8000,
       });
+
       this.socket = s;
 
-      s.on("connect", () => resolve());
+      s.on("connect", () => {
+        console.log("Socket conectado:", s.id);
+        resolve();
+      });
+
       s.on("connect_error", (err) => {
+        console.error("Erro Socket.IO:", err.message);
         this.errorListeners.forEach((l) => l(err.message));
         reject(err);
       });
+
       s.on("state_update", (state: RoomState) => {
         this.stateListeners.forEach((l) => l(state));
       });
+
       s.on("server_error", (msg: string) => {
         this.errorListeners.forEach((l) => l(msg));
       });
@@ -51,14 +57,16 @@ export class SocketAdapter implements MultiplayerAdapter {
   joinRoom(roomId: string, playerName: string): void {
     this.socket?.emit("join_room", { roomId, playerName });
   }
+
   ready(): void {
     this.socket?.emit("player_ready");
   }
+
   startGame(): void {
     this.socket?.emit("start_game");
   }
+
   sendInput(input: ClientInput): void {
-    // Map abstract input → concrete server events. Keeps the wire protocol stable.
     switch (input.type) {
       case "move":
         this.socket?.emit("player_move", { dir: input.dir });
@@ -82,6 +90,7 @@ export class SocketAdapter implements MultiplayerAdapter {
     this.stateListeners.add(l);
     return () => this.stateListeners.delete(l) as unknown as void;
   }
+
   onError(l: ErrorListener) {
     this.errorListeners.add(l);
     return () => this.errorListeners.delete(l) as unknown as void;
